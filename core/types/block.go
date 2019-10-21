@@ -1,8 +1,8 @@
 // Copyright 2014 The go-ethereum Authors
 // This file is part of the go-ethereum library.
 //
-// The go-ethereum library is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
+// The go-ethereum library is free software: you can redistribute(从新分配) it and/or modify
+// it under the terms of(条款) the GNU Lesser General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 //
@@ -38,8 +38,8 @@ var (
 	EmptyUncleHash = rlpHash([]*Header(nil))
 )
 
-// A BlockNonce is a 64-bit hash which proves (combined with the
-// mix-hash) that a sufficient amount of computation has been carried
+// A BlockNonce is a 64-bit hash which proves(证明) (combined with the
+// mix-hash) that a sufficient(充分) amount of computation has been carried
 // out on a block.
 type BlockNonce [8]byte
 
@@ -55,7 +55,9 @@ func (n BlockNonce) Uint64() uint64 {
 	return binary.BigEndian.Uint64(n[:])
 }
 
+// MarshalText 分配非托管内存、复制非托管内存块、将托管类型转换为非托管类型，此外还提供了在与非托管代码交互时使用的其他杂项方法。
 // MarshalText encodes n as a hex string with 0x prefix.
+// 类似拓展方法，可以通过BlockNonce调用
 func (n BlockNonce) MarshalText() ([]byte, error) {
 	return hexutil.Bytes(n[:]).MarshalText()
 }
@@ -68,6 +70,7 @@ func (n *BlockNonce) UnmarshalText(input []byte) error {
 //go:generate gencodec -type Header -field-override headerMarshaling -out gen_header_json.go
 
 // Header represents a block header in the Ethereum blockchain.
+// 区块链的头
 type Header struct {
 	ParentHash  common.Hash    `json:"parentHash"       gencodec:"required"`
 	UncleHash   common.Hash    `json:"sha3Uncles"       gencodec:"required"`
@@ -105,15 +108,15 @@ func (h *Header) Hash() common.Hash {
 
 var headerSize = common.StorageSize(reflect.TypeOf(Header{}).Size())
 
-// Size returns the approximate memory used by all internal contents. It is used
-// to approximate and limit the memory consumption of various caches.
+// Size returns the approximate（相似） memory used by all internal contents. It is used
+// to approximate and limit the memory consumption（消耗） of various caches.
 func (h *Header) Size() common.StorageSize {
 	return headerSize + common.StorageSize(len(h.Extra)+(h.Difficulty.BitLen()+h.Number.BitLen())/8)
 }
 
-// SanityCheck checks a few basic things -- these checks are way beyond what
-// any 'sane' production values should hold, and can mainly be used to prevent
-// that the unbounded fields are stuffed with junk data to add processing
+// SanityCheck（安全检查） checks a few basic things -- these checks are way beyond what
+// any 'sane'(理智) production values should hold, and can mainly（主要的） be used to prevent
+// that the unbounded fields are stuffed with junk data to add processing （用来预防未绑定的字段填充了垃圾数据以添加处理）
 // overhead
 func (h *Header) SanityCheck() error {
 	if h.Number != nil && !h.Number.IsUint64() {
@@ -137,14 +140,15 @@ func rlpHash(x interface{}) (h common.Hash) {
 	return h
 }
 
-// Body is a simple (mutable, non-safe) data container for storing and moving
+// 区块的body， 包含交易列表和叔父节点
+// Body is a simple (mutable 可以变的, non-safe) data container for storing （存储） and moving
 // a block's data contents (transactions and uncles) together.
 type Body struct {
 	Transactions []*Transaction
 	Uncles       []*Header
 }
 
-// Block represents an entire block in the Ethereum blockchain.
+// Block represents an entire（全部） block in the Ethereum blockchain.
 type Block struct {
 	header       *Header
 	uncles       []*Header
@@ -154,16 +158,18 @@ type Block struct {
 	hash atomic.Value
 	size atomic.Value
 
+	// 难度系数
 	// Td is used by package core to store the total difficulty
 	// of the chain up to and including the block.
 	td *big.Int
 
 	// These fields are used by package eth to track
-	// inter-peer block relay.
+	// inter-peer block relay.  追踪p2p网络
 	ReceivedAt   time.Time
 	ReceivedFrom interface{}
 }
 
+// deprecated 弃用  下面是弃用代码
 // DeprecatedTd is an old relic for extracting the TD of a block. It is in the
 // code solely to facilitate upgrading the database from the old format to the
 // new, after which it should be deleted. Do not use!
@@ -203,7 +209,7 @@ type storageblock struct {
 func NewBlock(header *Header, txs []*Transaction, uncles []*Header, receipts []*Receipt) *Block {
 	b := &Block{header: CopyHeader(header), td: new(big.Int)}
 
-	// TODO: panic if len(txs) != len(receipts)
+	// TODO: panic （没理由的） if len(txs) != len(receipts) 交易列表长度!=收款人长度
 	if len(txs) == 0 {
 		b.header.TxHash = EmptyRootHash
 	} else {
@@ -234,7 +240,7 @@ func NewBlock(header *Header, txs []*Transaction, uncles []*Header, receipts []*
 
 // NewBlockWithHeader creates a block with the given header data. The
 // header data is copied, changes to header and to the field values
-// will not affect the block.
+// will not affect the block.(改变头信息或者字段值，不会影响block，因为内部使用的复制逻辑)
 func NewBlockWithHeader(header *Header) *Block {
 	return &Block{header: CopyHeader(header)}
 }
