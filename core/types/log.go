@@ -38,7 +38,7 @@ type Log struct {
 	Data []byte `json:"data" gencodec:"required"`
 
 	// Derived fields. These fields are filled in by the node
-	// but not secured by consensus.
+	// but not secured(安全) by consensus(共识，一致).
 	// block in which the transaction was included
 	BlockNumber uint64 `json:"blockNumber"`
 	// hash of the transaction

@@ -7,12 +7,14 @@
 // (at your option) any later version.
 //
 // The go-ethereum library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// but WITHOUT ANY WAR2RANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 // GNU Lesser General Public License for more details.
 //
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
+
+// 生成器
 
 package bloombits
 
@@ -24,23 +26,23 @@ import (
 
 var (
 	// errSectionOutOfBounds is returned if the user tried to add more bloom filters
-	// to the batch than available space, or if tries to retrieve above the capacity.
+	// to the batch than available space, or if tries to retrieve（恢复） above the capacity(容量).
 	errSectionOutOfBounds = errors.New("section out of bounds")
 
 	// errBloomBitOutOfBounds is returned if the user tried to retrieve specified
-	// bit bloom above the capacity.
+	// bit bloom above the capacity(容量).
 	errBloomBitOutOfBounds = errors.New("bloom bit out of bounds")
 )
 
-// Generator takes a number of bloom filters and generates the rotated bloom bits
-// to be used for batched filtering.
+// Generator takes a number of bloom filters and generates the rotated（旋转） bloom bits
+// to be used for batched（成批的） filtering.
 type Generator struct {
 	blooms   [types.BloomBitLength][]byte // Rotated blooms for per-bit matching
-	sections uint                         // Number of sections to batch together
+	sections uint                         // Number of sections（部分，项，段） to batch together
 	nextSec  uint                         // Next section to set when adding a bloom
 }
 
-// NewGenerator creates a rotated bloom generator that can iteratively fill a
+// NewGenerator creates a rotated bloom generator that can iteratively(迭代) fill a
 // batched bloom filter's bits.
 func NewGenerator(sections uint) (*Generator, error) {
 	if sections%8 != 0 {

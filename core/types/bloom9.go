@@ -36,11 +36,13 @@ const (
 	BloomBitLength = 8 * BloomByteLength
 )
 
+// bloom filter 布隆过滤器
 // Bloom represents a 2048 bit bloom filter.
 type Bloom [BloomByteLength]byte
 
 // BytesToBloom converts a byte slice to a bloom filter.
-// It panics if b is not of suitable size.
+// It panics(恐慌 异常) if b is not of suitable size.
+// 如果长度不合适，会引发异常
 func BytesToBloom(b []byte) Bloom {
 	var bloom Bloom
 	bloom.SetBytes(b)

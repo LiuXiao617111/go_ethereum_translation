@@ -14,6 +14,8 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
+// 类型缓存， 类型缓存记录了类型->(编码器|解码器)的内容。
+
 package rlp
 
 import (
@@ -24,11 +26,11 @@ import (
 )
 
 var (
-	typeCacheMutex sync.RWMutex
-	typeCache      = make(map[typekey]*typeinfo)
+	typeCacheMutex sync.RWMutex                  //读写锁，用来在多线程的时候保护typeCache这个Map
+	typeCache      = make(map[typekey]*typeinfo) //核心数据结构，保存了类型->编解码器函数
 )
 
-type typeinfo struct {
+type typeinfo struct { //存储了编码器和解码器函数
 	decoder    decoder
 	decoderErr error // error from makeDecoder
 	writer     writer
@@ -75,13 +77,14 @@ func cachedWriter(typ reflect.Type) (writer, error) {
 }
 
 func cachedTypeInfo(typ reflect.Type, tags tags) *typeinfo {
-	typeCacheMutex.RLock()
+	typeCacheMutex.RLock() //加读锁来保护，
 	info := typeCache[typekey{typ, tags}]
 	typeCacheMutex.RUnlock()
-	if info != nil {
+	if info != nil { //如果成功获取到信息，那么就返回
 		return info
 	}
 	// not in the cache, need to generate info for this type.
+	//否则加写锁 调用cachedTypeInfo1函数创建并返回， 这里需要注意的是在多线程环境下有可能多个线程同时调用到这个地方，所以当你进入cachedTypeInfo1方法的时候需要判断一下是否已经被别的线程先创建成功了。
 	typeCacheMutex.Lock()
 	defer typeCacheMutex.Unlock()
 	return cachedTypeInfo1(typ, tags)
@@ -92,11 +95,13 @@ func cachedTypeInfo1(typ reflect.Type, tags tags) *typeinfo {
 	info := typeCache[key]
 	if info != nil {
 		// another goroutine got the write lock first
+		// 其他的线程可能已经创建成功了， 那么我们直接获取到信息然后返回
 		return info
 	}
 	// put a dummy value into the cache before generating.
 	// if the generator tries to lookup itself, it will get
 	// the dummy value and won't call itself recursively.
+	//这个地方首先创建了一个值来填充这个类型的位置，避免遇到一些递归定义的数据类型形成死循环
 	info = new(typeinfo)
 	typeCache[key] = info
 	info.generate(typ, tags)

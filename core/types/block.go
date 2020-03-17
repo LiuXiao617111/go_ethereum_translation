@@ -15,6 +15,8 @@
 // along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
 
 // Package types contains data types related to Ethereum consensus.
+// 已翻译
+
 package types
 
 import (

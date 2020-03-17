@@ -31,7 +31,9 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 )
 
+// 收据树
 //go:generate gencodec -type Receipt -field-override receiptMarshaling -out gen_receipt_json.go
+// RLP（Recursive Length Rrefix, 递归长度前缀）, 提供了一种适用于任意二进制数据数组的编码
 
 var (
 	receiptStatusFailedRLP     = []byte{}
@@ -39,7 +41,7 @@ var (
 )
 
 const (
-	// ReceiptStatusFailed is the status code of a transaction if execution failed.
+	// ReceiptStatusFailed is the status code of a transaction if execution(执行) failed.
 	ReceiptStatusFailed = uint64(0)
 
 	// ReceiptStatusSuccessful is the status code of a transaction if execution succeeded.
@@ -49,13 +51,14 @@ const (
 // Receipt represents the results of a transaction.
 type Receipt struct {
 	// Consensus fields: These fields are defined by the Yellow Paper
+	// Cumulative 累计
 	PostState         []byte `json:"root"`
 	Status            uint64 `json:"status"`
 	CumulativeGasUsed uint64 `json:"cumulativeGasUsed" gencodec:"required"`
 	Bloom             Bloom  `json:"logsBloom"         gencodec:"required"`
 	Logs              []*Log `json:"logs"              gencodec:"required"`
 
-	// Implementation fields: These fields are added by geth when processing a transaction.
+	// Implementation（实现） fields: These fields are added by geth when processing a transaction.
 	// They are stored in the chain database.
 	TxHash          common.Hash    `json:"transactionHash" gencodec:"required"`
 	ContractAddress common.Address `json:"contractAddress"`
@@ -67,7 +70,7 @@ type Receipt struct {
 	BlockNumber      *big.Int    `json:"blockNumber,omitempty"`
 	TransactionIndex uint        `json:"transactionIndex"`
 }
-
+// Marshaling 整理，集结
 type receiptMarshaling struct {
 	PostState         hexutil.Bytes
 	Status            hexutil.Uint64
@@ -77,7 +80,7 @@ type receiptMarshaling struct {
 	TransactionIndex  hexutil.Uint
 }
 
-// receiptRLP is the consensus encoding of a receipt.
+// receiptRLP is the consensus（一致） encoding of a receipt.
 type receiptRLP struct {
 	PostStateOrStatus []byte
 	CumulativeGasUsed uint64
@@ -85,7 +88,7 @@ type receiptRLP struct {
 	Logs              []*Log
 }
 
-// storedReceiptRLP is the storage encoding of a receipt.
+// storedReceiptRLP is the storage（仓储） encoding of a receipt.
 type storedReceiptRLP struct {
 	PostStateOrStatus []byte
 	CumulativeGasUsed uint64
@@ -113,7 +116,7 @@ type v3StoredReceiptRLP struct {
 	GasUsed           uint64
 }
 
-// NewReceipt creates a barebone transaction receipt, copying the init fields.
+// NewReceipt creates a barebone（准系统） transaction receipt, copying the init fields.
 func NewReceipt(root []byte, failed bool, cumulativeGasUsed uint64) *Receipt {
 	r := &Receipt{PostState: common.CopyBytes(root), CumulativeGasUsed: cumulativeGasUsed}
 	if failed {
@@ -124,13 +127,13 @@ func NewReceipt(root []byte, failed bool, cumulativeGasUsed uint64) *Receipt {
 	return r
 }
 
-// EncodeRLP implements rlp.Encoder, and flattens the consensus fields of a receipt
-// into an RLP stream. If no post state is present, byzantium fork is assumed.
+// EncodeRLP implements rlp.Encoder, and flattens(使..平坦) the consensus fields of a receipt (简化收据的一致领域)
+// into an RLP stream. If no post state is present, byzantium(拜占庭) fork is assumed.
 func (r *Receipt) EncodeRLP(w io.Writer) error {
 	return rlp.Encode(w, &receiptRLP{r.statusEncoding(), r.CumulativeGasUsed, r.Bloom, r.Logs})
 }
 
-// DecodeRLP implements rlp.Decoder, and loads the consensus fields of a receipt
+// DecodeRLP implements rlp.Decoder, and loads the consensus(一致) fields of a receipt
 // from an RLP stream.
 func (r *Receipt) DecodeRLP(s *rlp.Stream) error {
 	var dec receiptRLP
@@ -168,8 +171,8 @@ func (r *Receipt) statusEncoding() []byte {
 	return r.PostState
 }
 
-// Size returns the approximate memory used by all internal contents. It is used
-// to approximate and limit the memory consumption of various caches.
+// Size returns the approximate（近似） memory used by all internal contents. It is used
+// to approximate and limit the memory consumption （消费） of various caches.
 func (r *Receipt) Size() common.StorageSize {
 	size := common.StorageSize(unsafe.Sizeof(*r)) + common.StorageSize(len(r.PostState))
 
@@ -181,7 +184,7 @@ func (r *Receipt) Size() common.StorageSize {
 }
 
 // ReceiptForStorage is a wrapper around a Receipt that flattens and parses the
-// entire content of a receipt, as opposed to only the consensus fields originally.
+// entire content of a receipt, as opposed (反对) to only the consensus fields originally.
 type ReceiptForStorage Receipt
 
 // EncodeRLP implements rlp.Encoder, and flattens all content fields of a receipt
@@ -201,13 +204,13 @@ func (r *ReceiptForStorage) EncodeRLP(w io.Writer) error {
 // DecodeRLP implements rlp.Decoder, and loads both consensus and implementation
 // fields of a receipt from an RLP stream.
 func (r *ReceiptForStorage) DecodeRLP(s *rlp.Stream) error {
-	// Retrieve the entire receipt blob as we need to try multiple decoders
+	// Retrieve （检索，恢复） the entire receipt blob as we need to try multiple decoders
 	blob, err := s.Raw()
 	if err != nil {
 		return err
 	}
-	// Try decoding from the newest format for future proofness, then the older one
-	// for old nodes that just upgraded. V4 was an intermediate unreleased format so
+	// Try decoding from the newest format for future proofness（验证）, then the older one
+	// for old nodes that just upgraded. V4 was an intermediate（中间） unreleased format so
 	// we do need to decode it, but it's not common (try last).
 	if err := decodeStoredReceiptRLP(r, blob); err == nil {
 		return nil
@@ -278,6 +281,7 @@ func decodeV3StoredReceiptRLP(r *ReceiptForStorage, blob []byte) error {
 }
 
 // Receipts is a wrapper around a Receipt array to implement DerivableList.
+// Receipts是一个用于实现DerivableList的Receipt数组的包装器。
 type Receipts []*Receipt
 
 // Len returns the number of receipts in this list.
@@ -293,7 +297,7 @@ func (r Receipts) GetRlp(i int) []byte {
 }
 
 // DeriveFields fills the receipts with their computed fields based on consensus
-// data and contextual infos like containing block and transactions.
+// data and contextual(上下文的) infos like containing block and transactions.
 func (r Receipts) DeriveFields(config *params.ChainConfig, hash common.Hash, number uint64, txs Transactions) error {
 	signer := MakeSigner(config, new(big.Int).SetUint64(number))
 
@@ -302,17 +306,21 @@ func (r Receipts) DeriveFields(config *params.ChainConfig, hash common.Hash, num
 		return errors.New("transaction and receipt count mismatch")
 	}
 	for i := 0; i < len(r); i++ {
+		// 可以从交易本身检索交易hash
 		// The transaction hash can be retrieved from the transaction itself
 		r[i].TxHash = txs[i].Hash()
 
+		// block的本身字段
 		// block location fields
 		r[i].BlockHash = hash
 		r[i].BlockNumber = new(big.Int).SetUint64(number)
 		r[i].TransactionIndex = uint(i)
 
+		// 合约地址可以从交易本身派生出来
 		// The contract address can be derived from the transaction itself
 		if txs[i].To() == nil {
 			// Deriving the signer is expensive, only do if it's actually needed
+			// 派生Signer是昂贵的，只有在实际需要时才这样做
 			from, _ := Sender(signer, txs[i])
 			r[i].ContractAddress = crypto.CreateAddress(from, txs[i].Nonce())
 		}

@@ -24,6 +24,7 @@ import (
 	"github.com/ethereum/go-ethereum/trie"
 )
 
+// Derivable可推论的
 type DerivableList interface {
 	Len() int
 	GetRlp(i int) []byte

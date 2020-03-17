@@ -31,6 +31,8 @@ var (
 	ErrInvalidChainId = errors.New("invalid chain id for signer")
 )
 
+// sigCache用于缓存派生的发送方和包含方
+// signer常常用于继承它。
 // sigCache is used to cache the derived sender and contains
 // the signer used to derive it.
 type sigCache struct {
@@ -38,6 +40,7 @@ type sigCache struct {
 	from   common.Address
 }
 
+// MakeSigner根据给定的链配置和块号返回一个Singer。
 // MakeSigner returns a Signer based on the given chain config and block number.
 func MakeSigner(config *params.ChainConfig, blockNumber *big.Int) Signer {
 	var signer Signer
@@ -52,7 +55,7 @@ func MakeSigner(config *params.ChainConfig, blockNumber *big.Int) Signer {
 	return signer
 }
 
-// SignTx signs the transaction using the given signer and private key
+// SignTx signs（标记） the transaction using the given signer and private key
 func SignTx(tx *Transaction, s Signer, prv *ecdsa.PrivateKey) (*Transaction, error) {
 	h := s.Hash(tx)
 	sig, err := crypto.Sign(h[:], prv)
@@ -63,9 +66,11 @@ func SignTx(tx *Transaction, s Signer, prv *ecdsa.PrivateKey) (*Transaction, err
 }
 
 // Sender returns the address derived from the signature (V, R, S) using secp256k1
-// elliptic curve and an error if it failed deriving or upon an incorrect
+// elliptic（省略的） curve（ 曲线） and an error if it failed deriving or upon an incorrect
 // signature.
 //
+// 发送者可以缓存地址，允许它被使用
+// 签名的方法。如果缓存的签名者不匹配当前调用中使用的签名者，则缓存无效
 // Sender may cache the address, allowing it to be used regardless of
 // signing method. The cache is invalidated if the cached signer does
 // not match the signer used in the current call.
@@ -88,7 +93,9 @@ func Sender(signer Signer, tx *Transaction) (common.Address, error) {
 	return addr, nil
 }
 
-// Signer encapsulates transaction signature handling. Note that this interface is not a
+// Signer封装了事务签名处理。注意，这个接口不是
+// 稳定的API，可以随时改变以适应新的协议规则。
+// Signer encapsulates(压缩，封装) transaction signature handling. Note that this interface is not a
 // stable API and may change at any time to accommodate new protocol rules.
 type Signer interface {
 	// Sender returns the sender address of the transaction.
@@ -164,6 +171,7 @@ func (s EIP155Signer) Hash(tx *Transaction) common.Hash {
 	})
 }
 
+// 宅地 Homestead
 // HomesteadTransaction implements TransactionInterface using the
 // homestead rules.
 type HomesteadSigner struct{ FrontierSigner }
@@ -215,6 +223,7 @@ func (fs FrontierSigner) Hash(tx *Transaction) common.Hash {
 	})
 }
 
+//  Frontier 前沿
 func (fs FrontierSigner) Sender(tx *Transaction) (common.Address, error) {
 	return recoverPlain(fs.Hash(tx), tx.data.R, tx.data.S, tx.data.V, false)
 }

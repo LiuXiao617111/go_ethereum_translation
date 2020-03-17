@@ -104,11 +104,13 @@ func newTransaction(nonce uint64, to *common.Address, amount *big.Int, gasLimit 
 	return &Transaction{data: d}
 }
 
+// ChainId返回该事务为哪个链id签名(如果有的话)
 // ChainId returns which chain id this transaction was signed for (if at all)
 func (tx *Transaction) ChainId() *big.Int {
 	return deriveChainId(tx.data.V)
 }
 
+// protected返回交易是否受重播保护。
 // Protected returns whether the transaction is protected from replay protection.
 func (tx *Transaction) Protected() bool {
 	return isProtectedV(tx.data.V)
